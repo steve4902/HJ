@@ -55,6 +55,12 @@ st.info(f"👶 햅삐 탄생일: {baby_birthday.date()} (기준일로부터 {(da
 res = supabase.table("baby_growth").select("*").order("date").execute()
 df = pd.DataFrame(res.data)
 
+if not df.empty:
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"])
+    else:
+        st.warning("⚠️ 'date' 컬럼이 존재하지 않아 분석이 어렵습니다.")
+
 # 오늘의 기록 입력
 with st.form("entry_form"):
     st.subheader("📋 오늘의 기록 입력")
