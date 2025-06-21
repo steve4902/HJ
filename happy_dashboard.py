@@ -87,10 +87,29 @@ with st.form("entry_form"):
             age_days = (entry_date - baby_birthday.date()).days
             age_weeks = round(age_days / 7, 1)
             prompt = f"""
-            오늘은 생후 {age_days}일차 ({age_weeks}주차)인 햅삐의 성장 기록입니다.\n
-            키는 {height_cm}cm, 몸무게는 {weight_kg}kg, 수면은 {sleep_hours}시간, 분유는 {formula_ml}ml 섭취했습니다.\n
-            이 수치를 바탕으로 햅삐가 생후 {age_weeks}주 기준으로 건강하게 성장하고 있는지 중심으로 2~3문장 자연스럽게 평가해줘.\n
-            단순 나열이 아니라 '잘 자라고 있다', '충분히 수면을 취하고 있다'와 같은 따뜻한 피드백으로 작성해줘.
+            오늘은 생후 {age_days}일차 ({age_weeks}주차)인 햅삐의 성장 기록입니다.
+            오늘의 측정 값:
+            - 키: {height_cm}cm
+            - 몸무게: {weight_kg}kg
+            - 수면 시간: {sleep_hours}시간
+            - 분유 섭취량: {formula_ml}ml
+            
+            최근 7일 평균 (햅삐 개인 기준):
+            - 키: {avg_height:.1f}cm
+            - 몸무게: {avg_weight:.1f}kg
+            - 수면 시간: {avg_sleep:.1f}시간
+            - 분유 섭취량: {avg_formula:.0f}ml
+            
+            대한민국 남아 평균 (생후 {age_days}일 기준 예상값):
+            - 키: {avg_korea_height:.1f}cm
+            - 몸무게: {avg_korea_weight:.1f}kg
+            
+            위 데이터를 기반으로,
+            1. 오늘 햅삐의 성장 기록이 이전 흐름과 비교해 어떠한지
+            2. 대한민국 평균 성장 기준과 비교하여 잘 자라고 있는지
+            를 종합적으로 평가해줘.
+            결과는 2~3문장 이내로 자연스럽고 따뜻한 피드백 형식으로 작성해줘.
+            (예: “햅삐는 평균보다 약간 큰 편으로, 안정적인 수면과 섭취량을 유지하고 있어요.”)
             """
             response = client.chat.completions.create(
                 model="gpt-4",
