@@ -161,76 +161,31 @@ if not df.empty:
         mime="text/csv"
     )
 
-    # 🗓️ 주간 요약 자동 생성
+    # 🗓️ 주간 요약 자동 생성 (사용자 요청 시 실행)
     st.subheader("🗓️ 주간 요약 리포트 (GPT 생성)")
 
-    df["date"] = pd.to_datetime(df["date"])
-    last_week = df[df["date"] >= pd.Timestamp.today() - pd.Timedelta(days=7)]
+    if st.button("📝 이번 주 요약 리포트 생성하기"):
+        df["date"] = pd.to_datetime(df["date"])
+        last_week = df[df["date"] >= pd.Timestamp.today() - pd.Timedelta(days=7)]
 
-    if last_week.empty:
-        st.info("최근 7일간 기록이 부족합니다.")
-    else:
-        summary_prompt = f"""
-        다음은 지난 7일간 아기 성장 기록입니다:\n
-        {last_week[['date', 'height_cm', 'weight_kg', 'sleep_hours', 'formula_ml', 'diaper_changes', 'hospital_visit']].to_string(index=False)}\n
-        이 데이터를 바탕으로 전체적인 경과와 인상적인 점을 중심으로 주간 요약 리포트를 작성해줘.
-        분량은 3~5문장 정도로 자연스럽게, 부모에게 보고하는 느낌으로 써줘.
-        """
+        if last_week.empty:
+            st.info("최근 7일간 기록이 부족합니다.")
+        else:
+            summary_prompt = f"""
+            다음은 지난 7일간 아기 성장 기록입니다:\n
+            {last_week[['date', 'height_cm', 'weight_kg', 'sleep_hours', 'formula_ml', 'diaper_changes', 'hospital_visit']].to_string(index=False)}\n
+            이 데이터를 바탕으로 전체적인 경과와 인상적인 점을 중심으로 주간 요약 리포트를 작성해줘.
+            분량은 3~5문장 정도로 자연스럽게, 부모에게 보고하는 느낌으로 써줘.
+            """
 
-        with st.spinner("GPT가 리포트를 작성 중입니다..."):
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[{"role": "user", "content": summary_prompt}],
-                temperature=0.7,
-                max_tokens=500
-            )
-            weekly_report = response.choices[0].message.content.strip()
-            st.success("요약 완료!")
-            st.markdown(f"📝 **주간 리포트:**\n\n{weekly_report}")
-
+            with st.spinner("GPT가 리포트를 작성 중입니다..."):
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": summary_prompt}],
+                    temperature=0.7,
+                    max_tokens=500
+                )
+                weekly_report = response.choices[0].message.content.strip()
+                st.success("요약 완료!")
+                st.markdown(f"📝 **주간 리포트:**\n\n{weekly_report}")
        
-    # 📊 성장 곡선 WHO 기준 비교
-    st.subheader("📊 WHO 성장 기준과 비교")
-
-    # 햅삐 생일 기준 월령 계산
-    baby_birthday = pd.to_datetime("2025-07-10")
-    df["개월"] = ((df["date"] - baby_birthday).dt.days / 30).astype(int)
-
-    # WHO 표준 (남아, 0~12개월 예시)
-    who_data = {
-        0: {"height": 49.9, "weight": 3.3},
-        1: {"height": 54.7, "weight": 4.5},
-        2: {"height": 58.4, "weight": 5.6},
-        3: {"height": 61.4, "weight": 6.4},
-        4: {"height": 63.9, "weight": 7.0},
-        5: {"height": 65.9, "weight": 7.5},
-        6: {"height": 67.6, "weight": 7.9},
-        7: {"height": 69.2, "weight": 8.3},
-        8: {"height": 70.6, "weight": 8.6},
-        9: {"height": 72.0, "weight": 8.9},
-        10: {"height": 73.3, "weight": 9.2},
-        11: {"height": 74.5, "weight": 9.4},
-        12: {"height": 75.7, "weight": 9.6},
-    }
-
-    # 우리 아기 데이터 평균화
-    growth_data = df[["개월", "height_cm", "weight_kg"]].groupby("개월").mean()
-
-    # WHO 기준 데이터프레임화
-    who_df = pd.DataFrame.from_dict(who_data, orient="index")
-    who_df.index.name = "개월"
-
-    # 병합
-    merged = growth_data.join(who_df, rsuffix="_who").dropna()
-
-    if not merged.empty:
-        if "height_cm" in merged.columns and "height_who" in merged.columns:
-            st.line_chart(merged[["height_cm", "height_who"]])
-        else:
-            st.info("비교할 키 데이터가 충분하지 않습니다.")
-        if "weight_kg" in merged.columns and "weight_who" in merged.columns:
-            st.line_chart(merged[["weight_kg", "weight_who"]])
-        else:
-            st.info("비교할 몸무게 데이터가 충분하지 않습니다.")
-    else:
-        st.info("아직 WHO 비교 가능한 기록이 부족합니다.")
