@@ -86,31 +86,57 @@ with st.form("entry_form"):
         if gen_diary or not note_input:
             age_days = (entry_date - baby_birthday.date()).days
             age_weeks = round(age_days / 7, 1)
+
+            # 최근 7일 평균
+            recent = df[df["date"] >= pd.to_datetime(entry_date) - pd.Timedelta(days=7)]
+            avg_height = recent["height_cm"].mean()
+            avg_weight = recent["weight_kg"].mean()
+            avg_sleep = recent["sleep_hours"].mean()
+            avg_formula = recent["formula_ml"].mean()
+
+            # 대한민국 남아 생후 일수별 평균 (예시: 간략화된 데이터)
+            korea_avg = {
+                30: {"height": 54.7, "weight": 4.5},
+                60: {"height": 58.4, "weight": 5.6},
+                90: {"height": 61.4, "weight": 6.4},
+                120: {"height": 63.9, "weight": 7.0},
+                150: {"height": 65.9, "weight": 7.5},
+                180: {"height": 67.6, "weight": 7.9},
+                210: {"height": 69.2, "weight": 8.3},
+                240: {"height": 70.6, "weight": 8.6}
+            }
+            nearest_day = min(korea_avg.keys(), key=lambda x: abs(x - age_days))
+            avg_korea_height = korea_avg[nearest_day]["height"]
+            avg_korea_weight = korea_avg[nearest_day]["weight"]
+
             prompt = f"""
             오늘은 생후 {age_days}일차 ({age_weeks}주차)인 햅삐의 성장 기록입니다.
+
             오늘의 측정 값:
-            - 키: {height_cm}cm
-            - 몸무게: {weight_kg}kg
-            - 수면 시간: {sleep_hours}시간
-            - 분유 섭취량: {formula_ml}ml
-            
+- 키: {height_cm}cm
+- 몸무게: {weight_kg}kg
+- 수면 시간: {sleep_hours}시간
+- 분유 섭취량: {formula_ml}ml
+
             최근 7일 평균 (햅삐 개인 기준):
-            - 키: {avg_height:.1f}cm
-            - 몸무게: {avg_weight:.1f}kg
-            - 수면 시간: {avg_sleep:.1f}시간
-            - 분유 섭취량: {avg_formula:.0f}ml
-            
-            대한민국 남아 평균 (생후 {age_days}일 기준 예상값):
-            - 키: {avg_korea_height:.1f}cm
-            - 몸무게: {avg_korea_weight:.1f}kg
-            
+- 키: {avg_height:.1f}cm
+- 몸무게: {avg_weight:.1f}kg
+- 수면 시간: {avg_sleep:.1f}시간
+- 분유 섭취량: {avg_formula:.0f}ml
+
+            대한민국 남아 평균 (생후 {nearest_day}일 기준 예상값):
+- 키: {avg_korea_height:.1f}cm
+- 몸무게: {avg_korea_weight:.1f}kg
+
             위 데이터를 기반으로,
-            1. 오늘 햅삐의 성장 기록이 이전 흐름과 비교해 어떠한지
-            2. 대한민국 평균 성장 기준과 비교하여 잘 자라고 있는지
-            를 종합적으로 평가해줘.
+1. 오늘 햅삐의 성장 기록이 이전 흐름과 비교해 어떠한지
+2. 대한민국 평균 성장 기준과 비교하여 잘 자라고 있는지
+를 종합적으로 평가해줘.
+
             결과는 2~3문장 이내로 자연스럽고 따뜻한 피드백 형식으로 작성해줘.
-            (예: “햅삐는 평균보다 약간 큰 편으로, 안정적인 수면과 섭취량을 유지하고 있어요.”)
+(예: “햅삐는 평균보다 약간 큰 편으로, 안정적인 수면과 섭취량을 유지하고 있어요.”)
             """
+
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
