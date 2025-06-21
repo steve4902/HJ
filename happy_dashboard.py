@@ -193,3 +193,46 @@ if not df.empty:
             weekly_report = response.choices[0].message.content.strip()
             st.success("요약 완료!")
             st.markdown(f"📝 **주간 리포트:**\n\n{weekly_report}")
+
+    # 🗓️ 주간 요약 자동 생성
+    ... (주간 요약 코드 유지) ...
+
+    # 📊 성장 곡선 WHO 기준 비교
+    st.subheader("📊 WHO 성장 기준과 비교")
+
+    # 햅삐 생일 기준 월령 계산
+    baby_birthday = pd.to_datetime("2025-07-10")
+    df["개월"] = ((df["date"] - baby_birthday).dt.days / 30).astype(int)
+
+    # WHO 표준 (남아, 0~12개월 예시)
+    who_data = {
+        0: {"height": 49.9, "weight": 3.3},
+        1: {"height": 54.7, "weight": 4.5},
+        2: {"height": 58.4, "weight": 5.6},
+        3: {"height": 61.4, "weight": 6.4},
+        4: {"height": 63.9, "weight": 7.0},
+        5: {"height": 65.9, "weight": 7.5},
+        6: {"height": 67.6, "weight": 7.9},
+        7: {"height": 69.2, "weight": 8.3},
+        8: {"height": 70.6, "weight": 8.6},
+        9: {"height": 72.0, "weight": 8.9},
+        10: {"height": 73.3, "weight": 9.2},
+        11: {"height": 74.5, "weight": 9.4},
+        12: {"height": 75.7, "weight": 9.6},
+    }
+
+    # 우리 아기 데이터 평균화
+    growth_data = df[["개월", "height_cm", "weight_kg"]].groupby("개월").mean()
+
+    # WHO 기준 데이터프레임화
+    who_df = pd.DataFrame.from_dict(who_data, orient="index")
+    who_df.index.name = "개월"
+
+    # 병합
+    merged = growth_data.join(who_df, rsuffix="_who").dropna()
+
+    if not merged.empty:
+        st.line_chart(merged[["height_cm", "height_who"]])
+        st.line_chart(merged[["weight_kg", "weight_who"]])
+    else:
+        st.info("아직 WHO 비교 가능한 기록이 부족합니다.")
