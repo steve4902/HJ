@@ -103,8 +103,6 @@ with st.form("entry_form"):
         supabase.table("baby_growth").insert(new_entry).execute()
         st.success("기록이 저장되었습니다!")
 
-... (이하 동일) ...
-
     # 🗓️ 주간 요약 자동 생성 (사용자 요청 시 실행)
     st.subheader("🗓️ 주간 요약 리포트 (GPT 생성)")
 
