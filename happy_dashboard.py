@@ -97,6 +97,15 @@ with st.form("entry_form"):
             age_days = (entry_date - baby_birthday.date()).days
             age_weeks = round(age_days / 7, 1)
 
+            if "date" in df.columns:
+                recent = df[df["date"] >= pd.to_datetime(entry_date) - pd.Timedelta(days=7)]
+                avg_height = recent["height_cm"].mean()
+                avg_weight = recent["weight_kg"].mean()
+                avg_sleep = recent["sleep_hours"].mean()
+                avg_formula = recent["formula_ml"].mean()
+            else:
+                avg_height = avg_weight = avg_sleep = avg_formula = 0
+
             # 최근 7일 평균
             recent = df[df["date"] >= pd.to_datetime(entry_date) - pd.Timedelta(days=7)]
             avg_height = recent["height_cm"].mean()
