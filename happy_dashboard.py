@@ -51,6 +51,10 @@ st.title("🍼 햅삐 성장 대시보드")
 # 생일 정보 상단 표시
 st.info(f"👶 햅삐 탄생일: {baby_birthday.date()} (기준일로부터 {(date.today() - baby_birthday.date()).days}일 지남)")
 
+# 데이터 불러오기
+res = supabase.table("baby_growth").select("*").order("date").execute()
+df = pd.DataFrame(res.data)
+
 # 오늘의 기록 입력
 with st.form("entry_form"):
     st.subheader("📋 오늘의 기록 입력")
