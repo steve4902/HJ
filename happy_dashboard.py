@@ -21,7 +21,7 @@ client = openai.OpenAI(api_key=openai_api_key)
 # 로그인 체크
 if "user" not in st.session_state:
     st.set_page_config(page_title="햅삐 대시보드 로그인", layout="wide")
-    st.title("\U0001F476 햅삐 성장 대시보드 - 로그인")
+    st.title("🍼 햅삐 성장 대시보드 - 로그인")
 
     with st.form("login_form"):
         email = st.text_input("이메일")
@@ -43,11 +43,11 @@ if "user" not in st.session_state:
 
 # 로그인 이후 대시보드
 st.set_page_config(page_title="햅삐 성장 대시보드", layout="wide")
-st.title("\U0001F476 햅삐 성장 대시보드")
+st.title("🍼 햅삐 성장 대시보드")
 
 # 오늘의 기록 입력
 with st.form("entry_form"):
-    st.subheader("\U0001F4CB 오늘의 기록 입력")
+    st.subheader("📋 오늘의 기록 입력")
     col1, col2, col3 = st.columns(3)
     with col1:
         entry_date = st.date_input("날짜", value=date.today())
@@ -101,31 +101,31 @@ res = supabase.table("baby_growth").select("*").order("date").execute()
 df = pd.DataFrame(res.data)
 
 if not df.empty:
-    st.subheader("\U0001F4C8 성장 차트")
+    st.subheader("📈 성장 차트")
     col1, col2 = st.columns(2)
     with col1:
         st.line_chart(df.set_index("date")["height_cm"])
     with col2:
         st.line_chart(df.set_index("date")["weight_kg"])
 
-    st.subheader("\U0001F6CC 수면 & 분유 추이")
+    st.subheader("🛌 수면 & 분유 추이")
     col3, col4 = st.columns(2)
     with col3:
         st.bar_chart(df.set_index("date")["sleep_hours"])
     with col4:
         st.bar_chart(df.set_index("date")["formula_ml"])
 
-    st.subheader("\U0001F6B7 기저귀 교체 추이")
+    st.subheader("🧷 기저귀 교체 추이")
     st.bar_chart(df.set_index("date")["diaper_changes"])
 
-    st.subheader("\U0001F3E5 병원 방문 기록")
+    st.subheader("🏥 병원 방문 기록")
     hospital_df = df[df["hospital_visit"].str.strip() != ""]
     if hospital_df.empty:
         st.info("기록된 병원 방문이 없습니다.")
     else:
         st.dataframe(hospital_df[["date", "hospital_visit"]].set_index("date"))
 
-    st.subheader("\U0001F4DD 하루 요약 메모")
+    st.subheader("📝 하루 요약 메모")
     st.dataframe(df[["date", "note"]].set_index("date"))
 
     # ✏️ 수정 및 삭제 기능
@@ -150,7 +150,7 @@ if not df.empty:
             }).eq("id", row["id"]).execute()
         st.success("수정이 완료되었습니다!")
 
-    st.subheader("\U0001F5D1️ 기록 삭제")
+    st.subheader("🗑️ 기록 삭제")
     delete_id = st.selectbox("삭제할 기록 선택 (id)", df["id"])
     if st.button("❌ 선택한 기록 삭제"):
         supabase.table("baby_growth").delete().eq("id", delete_id).execute()
@@ -158,7 +158,7 @@ if not df.empty:
         st.rerun()
 
     # 📥 CSV 다운로드
-    st.subheader("\U0001F4E5 기록 다운로드")
+    st.subheader("📥 기록 다운로드")
     csv_data = df.to_csv(index=False).encode("utf-8-sig")
     st.download_button(
         label="📄 CSV로 다운로드",
@@ -166,3 +166,30 @@ if not df.empty:
         file_name="happy_dashboard_data.csv",
         mime="text/csv"
     )
+
+    # 🗓️ 주간 요약 자동 생성
+    st.subheader("🗓️ 주간 요약 리포트 (GPT 생성)")
+
+    df["date"] = pd.to_datetime(df["date"])
+    last_week = df[df["date"] >= pd.Timestamp.today() - pd.Timedelta(days=7)]
+
+    if last_week.empty:
+        st.info("최근 7일간 기록이 부족합니다.")
+    else:
+        summary_prompt = f"""
+        다음은 지난 7일간 아기 성장 기록입니다:\n
+        {last_week[['date', 'height_cm', 'weight_kg', 'sleep_hours', 'formula_ml', 'diaper_changes', 'hospital_visit']].to_string(index=False)}\n
+        이 데이터를 바탕으로 전체적인 경과와 인상적인 점을 중심으로 주간 요약 리포트를 작성해줘.
+        분량은 3~5문장 정도로 자연스럽게, 부모에게 보고하는 느낌으로 써줘.
+        """
+
+        with st.spinner("GPT가 리포트를 작성 중입니다..."):
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": summary_prompt}],
+                temperature=0.7,
+                max_tokens=500
+            )
+            weekly_report = response.choices[0].message.content.strip()
+            st.success("요약 완료!")
+            st.markdown(f"📝 **주간 리포트:**\n\n{weekly_report}")
