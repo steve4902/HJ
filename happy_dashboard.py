@@ -230,7 +230,13 @@ if not df.empty:
     merged = growth_data.join(who_df, rsuffix="_who").dropna()
 
     if not merged.empty:
-        st.line_chart(merged[["height_cm", "height_who"]])
-        st.line_chart(merged[["weight_kg", "weight_who"]])
+        if "height_cm" in merged.columns and "height_who" in merged.columns:
+            st.line_chart(merged[["height_cm", "height_who"]])
+        else:
+            st.info("비교할 키 데이터가 충분하지 않습니다.")
+        if "weight_kg" in merged.columns and "weight_who" in merged.columns:
+            st.line_chart(merged[["weight_kg", "weight_who"]])
+        else:
+            st.info("비교할 몸무게 데이터가 충분하지 않습니다.")
     else:
         st.info("아직 WHO 비교 가능한 기록이 부족합니다.")
