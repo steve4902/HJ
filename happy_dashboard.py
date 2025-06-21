@@ -103,6 +103,69 @@ with st.form("entry_form"):
         supabase.table("baby_growth").insert(new_entry).execute()
         st.success("기록이 저장되었습니다!")
 
+# 데이터 불러오기
+res = supabase.table("baby_growth").select("*").order("date").execute()
+df = pd.DataFrame(res.data)
+
+if not df.empty:
+    st.subheader("📈 성장 차트")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.line_chart(df.set_index("date")["height_cm"])
+    with col2:
+        st.line_chart(df.set_index("date")["weight_kg"])
+
+    st.subheader("🛌 수면 & 분유 추이")
+    col3, col4 = st.columns(2)
+    with col3:
+        st.bar_chart(df.set_index("date")["sleep_hours"])
+    with col4:
+        st.bar_chart(df.set_index("date")["formula_ml"])
+
+    st.subheader("🧷 기저귀 교체 추이")
+    st.bar_chart(df.set_index("date")["diaper_changes"])
+
+    st.subheader("🏥 병원 방문 기록")
+    hospital_df = df[df["hospital_visit"].str.strip() != ""]
+    if hospital_df.empty:
+        st.info("기록된 병원 방문이 없습니다.")
+    else:
+        st.dataframe(hospital_df[["date", "hospital_visit"]].set_index("date"))
+
+    st.subheader("📝 하루 요약 메모")
+    st.dataframe(df[["date", "note"]].set_index("date"))
+
+    # ✏️ 수정 및 삭제 기능
+    st.subheader("✏️ 기록 수정 및 삭제")
+    editable_df = st.data_editor(
+        df[["id", "date", "height_cm", "weight_kg", "sleep_hours", "formula_ml", "diaper_changes", "hospital_visit", "note"]],
+        use_container_width=True,
+        num_rows="dynamic",
+        disabled=["id", "date"]
+    )
+
+    if st.button("📝 수정사항 저장"):
+        for _, row in editable_df.iterrows():
+            supabase.table("baby_growth").update({
+                "height_cm": row["height_cm"],
+                "weight_kg": row["weight_kg"],
+                "sleep_hours": row["sleep_hours"],
+                "formula_ml": row["formula_ml"],
+                "diaper_changes": row["diaper_changes"],
+                "hospital_visit": row["hospital_visit"],
+                "note": row["note"]
+            }).eq("id", row["id"]).execute()
+        st.success("수정이 완료되었습니다!")
+
+    st.subheader("📥 기록 다운로드")
+    csv_data = df.to_csv(index=False).encode("utf-8-sig")
+    st.download_button(
+        label="📄 CSV로 다운로드",
+        data=csv_data,
+        file_name="happy_dashboard_data.csv",
+        mime="text/csv"
+    )
+
     # 🗓️ 주간 요약 자동 생성 (사용자 요청 시 실행)
     st.subheader("🗓️ 주간 요약 리포트 (GPT 생성)")
 
