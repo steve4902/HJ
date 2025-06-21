@@ -135,41 +135,40 @@ if not df.empty:
     st.subheader("📝 하루 요약 메모")
     st.dataframe(df[["date", "note"]].set_index("date"))
 
-  ... (상단 동일) ...
+    # ✏️ 수정 및 삭제 기능
+    st.subheader("✏️ 기록 수정 및 삭제")
+    editable_df = st.data_editor(
+        df[["id", "date", "height_cm", "weight_kg", "sleep_hours", "formula_ml", "diaper_changes", "hospital_visit", "note"]],
+        use_container_width=True,
+        num_rows="dynamic",
+        disabled=["id", "date"]
+    )
 
-# ✏️ 수정 및 삭제 기능
-st.subheader("✏️ 기록 수정 및 삭제")
-editable_df = st.data_editor(
-    df[["id", "date", "height_cm", "weight_kg", "sleep_hours", "formula_ml", "diaper_changes", "hospital_visit", "note"]],
-    use_container_width=True,
-    num_rows="dynamic",
-    disabled=["id", "date"]
-)
+    if st.button("📝 수정사항 저장"):
+        original_ids = set(df["id"])
+        updated_ids = set(editable_df["id"])
 
-if st.button("📝 수정사항 저장"):
-    original_ids = set(df["id"])
-    updated_ids = set(editable_df["id"])
+        # 수정 처리
+        for _, row in editable_df.iterrows():
+            supabase.table("baby_growth").update({
+                "height_cm": row["height_cm"],
+                "weight_kg": row["weight_kg"],
+                "sleep_hours": row["sleep_hours"],
+                "formula_ml": row["formula_ml"],
+                "diaper_changes": row["diaper_changes"],
+                "hospital_visit": row["hospital_visit"],
+                "note": row["note"]
+            }).eq("id", row["id"]).execute()
 
-    # 수정 처리
-    for _, row in editable_df.iterrows():
-        supabase.table("baby_growth").update({
-            "height_cm": row["height_cm"],
-            "weight_kg": row["weight_kg"],
-            "sleep_hours": row["sleep_hours"],
-            "formula_ml": row["formula_ml"],
-            "diaper_changes": row["diaper_changes"],
-            "hospital_visit": row["hospital_visit"],
-            "note": row["note"]
-        }).eq("id", row["id"]).execute()
+        # 삭제 처리
+        deleted_ids = original_ids - updated_ids
+        for del_id in deleted_ids:
+            supabase.table("baby_growth").delete().eq("id", del_id).execute()
 
-    # 삭제 처리
-    deleted_ids = original_ids - updated_ids
-    for del_id in deleted_ids:
-        supabase.table("baby_growth").delete().eq("id", del_id).execute()
+        st.success("수정 및 삭제가 완료되었습니다!")
+        st.rerun()
 
-    st.success("수정 및 삭제가 완료되었습니다!")
-    st.rerun()
-
+    # 📥 기록 다운로드
     st.subheader("📥 기록 다운로드")
     csv_data = df.to_csv(index=False).encode("utf-8-sig")
     st.download_button(
