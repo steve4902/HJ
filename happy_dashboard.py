@@ -194,9 +194,7 @@ if not df.empty:
             st.success("요약 완료!")
             st.markdown(f"📝 **주간 리포트:**\n\n{weekly_report}")
 
-    # 🗓️ 주간 요약 자동 생성
-    ... (주간 요약 코드 유지) ...
-
+       
     # 📊 성장 곡선 WHO 기준 비교
     st.subheader("📊 WHO 성장 기준과 비교")
 
