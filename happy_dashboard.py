@@ -150,12 +150,6 @@ if not df.empty:
             }).eq("id", row["id"]).execute()
         st.success("수정이 완료되었습니다!")
 
-    st.subheader("🗑️ 기록 삭제")
-    delete_id = st.selectbox("삭제할 기록 선택 (id)", df["id"])
-    if st.button("❌ 선택한 기록 삭제"):
-        supabase.table("baby_growth").delete().eq("id", delete_id).execute()
-        st.success("삭제가 완료되었습니다!")
-        st.rerun()
 
     # 📥 CSV 다운로드
     st.subheader("📥 기록 다운로드")
