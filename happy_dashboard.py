@@ -106,12 +106,7 @@ with st.form("entry_form"):
             else:
                 avg_height = avg_weight = avg_sleep = avg_formula = 0
 
-            # 최근 7일 평균
-            recent = df[df["date"] >= pd.to_datetime(entry_date) - pd.Timedelta(days=7)]
-            avg_height = recent["height_cm"].mean()
-            avg_weight = recent["weight_kg"].mean()
-            avg_sleep = recent["sleep_hours"].mean()
-            avg_formula = recent["formula_ml"].mean()
+            
 
             # 대한민국 남아 생후 일수별 평균 (예시: 간략화된 데이터)
             korea_avg = {
